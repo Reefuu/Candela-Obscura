@@ -21,6 +21,8 @@ Characters begin at level 2. Choose abilities from any role or specialty, includ
 
 With empty Firebase placeholders, the app offers a clearly labelled local preview. Preview edits persist in that browser and can sync between tabs of the same origin. Online cross-device play requires Firebase configuration. An online connection failure shows an error instead of opening a local table.
 
+Version 1.1.1 supports the earlier player-presence rules and keeps online-player indicator problems separate from Circle access and save failures. See `UPDATE_EXISTING.md` to update your running GitHub Pages app.
+
 ## Files
 
 | File | Purpose |

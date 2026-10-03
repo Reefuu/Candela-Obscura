@@ -7,6 +7,12 @@
 
 The update ZIP contains the changed app files and does not contain `firebase-config.js`. Your configured Firebase project and saved Circle carry over. Keep using the corrected `firebase-rules.json` from the previous access fix; these features use the same database permissions.
 
+## Firebase warning fix
+
+Version 1.1.1 fixes the misleading access warning when rolls and sheets work but the online player connection fails. It supports the earlier presence rules by creating the player's owned entry before retrying disconnect cleanup when required. The current rules still register cleanup first.
+
+Online player connection problems are shown in the player-list area. Real Circle access and save errors remain visible. Upload `index.html`, `app.js`, and `store.js` together so the page loads this fix instead of cached scripts. You do not need to reset your database or replace your Firebase config.
+
 ## Gilded dice
 
 Choose an action and build its pool. Click the numbered dice in **Your dice pool** to choose which dice are gilded before rolling. The number of gilded dice comes from your action, extra gilded dice, and any shared Circle die. Clicking a standard die swaps the gilded choice when the pool already has the required number. A Circle die is always gilded.

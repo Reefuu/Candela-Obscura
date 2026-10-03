@@ -4,13 +4,14 @@ import { migrateProgression } from './progression.js?v=2';
 
 const PREFIX = 'candela-obscura-v1:';
 const makeId = () => crypto.randomUUID();
+const permissionDenied = error => /permission.?denied/i.test(String(error?.code || '') + String(error?.message || error || ''));
 
 export function friendlyError(error) {
   const code = String(error?.code || '');
   const message = String(error?.message || error || 'Could not save this change.');
   if (code.includes('operation-not-allowed')) return 'Enable Anonymous sign-in in the NEW Firebase project’s Authentication settings.';
   if (code.includes('unauthorized-domain')) return 'Add your GitHub Pages domain to the NEW Firebase project’s authorized domains.';
-  if (/permission.?denied/i.test(code + message)) return 'Firebase blocked access. Publish firebase-rules.json in the NEW project’s Realtime Database rules.';
+  if (permissionDenied(error)) return 'Firebase denied access to this Circle. Check the Realtime Database rules for the project in firebase-config.js.';
   if (/invalid-api-key|api-key-not-valid/i.test(code + message)) return 'The Firebase API key is invalid. Check firebase-config.js.';
   if (/network|fetch|loading dynamically imported|importing a module/i.test(code + message)) return 'Could not reach Firebase. Check your connection, then reload.';
   return message;
@@ -27,12 +28,12 @@ function normalize(state) {
   return migrateProgression(state);
 }
 
-export async function createStore(onStatus) {
+export async function createStore(onStatus, onPresenceStatus = () => {}) {
   const fields = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'appId'];
   const supplied = fields.filter(key => firebaseConfig[key] && !firebaseConfig[key].includes('PASTE_YOUR'));
   if (supplied.length === 0) return new LocalStore(onStatus);
   if (supplied.length !== fields.length) throw new Error('The Firebase config is incomplete. Fill in all five required fields, including databaseURL.');
-  const store = new FirebaseStore(onStatus);
+  const store = new FirebaseStore(onStatus, onPresenceStatus);
   await store.init();
   return store;
 }
@@ -143,14 +144,17 @@ class LocalStore {
   }
 }
 
-class FirebaseStore {
-  constructor(onStatus) {
+export class FirebaseStore {
+  constructor(onStatus, onPresenceStatus = () => {}) {
     this.mode = 'firebase';
     this.online = false;
     this.clientId = makeId();
     this.onStatus = onStatus;
+    this.onPresenceStatus = onPresenceStatus;
     this.presenceRef = null;
     this.presenceData = null;
+    this.presenceVersion = 0;
+    this.presenceWrite = Promise.resolve();
   }
   async init() {
     this.onStatus('Connecting…', 'connecting');
@@ -170,7 +174,7 @@ class FirebaseStore {
     dbSDK.onValue(dbSDK.ref(this.db, '.info/connected'), snapshot => {
       this.online = snapshot.val() === true;
       this.onStatus(this.online ? 'Table connected' : 'Reconnecting…', this.online ? 'online' : 'offline');
-      if (this.online && this.presenceRef && this.presenceData) this.writePresence().catch(error => this.onStatus(friendlyError(error), 'error'));
+      if (this.online && this.presenceRef && this.presenceData) this.writePresence();
     });
     window.addEventListener('pagehide', () => { if (this.presenceRef) dbSDK.remove(this.presenceRef).catch(() => {}); });
   }
@@ -219,15 +223,56 @@ class FirebaseStore {
     const { ref, onValue } = this.sdk;
     return onValue(ref(this.db, `candela/circles/${id}`), snapshot => callback(normalize(snapshot.val())), onError);
   }
-  async writePresence() {
-    const { onDisconnect, set, serverTimestamp } = this.sdk;
-    await onDisconnect(this.presenceRef).remove();
-    await set(this.presenceRef, { ...this.presenceData, seenAt: serverTimestamp() });
+  writePresence() {
+    const reference = this.presenceRef, data = this.presenceData, version = this.presenceVersion;
+    if (!reference || !data) return Promise.resolve(true);
+    const current = () => version === this.presenceVersion;
+    // Serialize seat updates so an earlier connection cannot overwrite a newer seat.
+    this.presenceWrite = this.presenceWrite.then(async () => {
+      if (!current() || !this.online) return false;
+      const { onDisconnect, set, remove, serverTimestamp } = this.sdk;
+      const value = { ...data, seenAt: serverTimestamp() };
+      let written = false;
+      try {
+        const cleanup = onDisconnect(reference);
+        try { await cleanup.remove(); }
+        catch (error) {
+          if (!permissionDenied(error)) throw error;
+          if (!current()) return false;
+          // Earlier rules require an existing owned entry before allowing deletion.
+          // Create that entry, then retry cleanup without changing any permissions.
+          await set(reference, value);
+          written = true;
+          try { await cleanup.remove(); }
+          catch (cleanupError) {
+            await remove(reference).catch(() => {});
+            throw cleanupError;
+          }
+        }
+        if (!current()) {
+          if (written) await remove(reference).catch(() => {});
+          return false;
+        }
+        if (!written) await set(reference, value);
+        if (!current()) {
+          await remove(reference).catch(() => {});
+          return false;
+        }
+        this.onPresenceStatus(null);
+        return true;
+      } catch (error) {
+        if (current()) this.onPresenceStatus(error);
+        return false;
+      }
+    });
+    return this.presenceWrite;
   }
   async setPresence(circleId, name, characterId) {
     const { ref } = this.sdk;
     this.presenceRef = ref(this.db, `candela/presence/${circleId}/${this.clientId}`);
     this.presenceData = { uid: this.uid, clientId: this.clientId, name, characterId };
+    this.presenceVersion++;
+    this.onPresenceStatus(null);
     if (this.online) await this.writePresence();
   }
   subscribePresence(circleId, callback, onError) {
@@ -236,8 +281,13 @@ class FirebaseStore {
   }
   async leave() {
     const previous = this.presenceRef;
+    this.presenceVersion++;
     this.presenceRef = null;
     this.presenceData = null;
-    if (previous && this.online) await this.sdk.remove(previous);
+    this.onPresenceStatus(null);
+    if (previous && this.online) {
+      try { await this.sdk.remove(previous); }
+      catch (error) { this.onPresenceStatus(error); }
+    }
   }
 }
