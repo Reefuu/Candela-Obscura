@@ -8,9 +8,15 @@
           ".read": "auth != null",
           ".write": "auth != null && newData.exists()",
           ".validate": "newData.hasChildren(['schemaVersion', 'name', 'characters', 'resources', 'illumination', 'illuminationMax', 'gildedDice', 'gildedDiceMax']) && newData.child('schemaVersion').val() === 1",
-          "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
-          "illumination": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= newData.parent().child('illuminationMax').val()" },
-          "gildedDice": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= newData.parent().child('gildedDiceMax').val()" },
+          "name": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+          },
+          "illumination": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= newData.parent().child('illuminationMax').val()"
+          },
+          "gildedDice": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= newData.parent().child('gildedDiceMax').val()"
+          },
           "events": {
             "$event": {
               ".validate": "newData.hasChildren(['id', 'type', 'authorUid', 'author', 'createdAt', 'sequence']) && newData.child('id').val() === $event && (data.exists() ? newData.child('authorUid').val() === data.child('authorUid').val() : newData.child('authorUid').val() === auth.uid)"
@@ -22,7 +28,7 @@
         "$circle": {
           ".read": "auth != null",
           "$client": {
-            ".write": "auth != null && ((!data.exists() && newData.child('uid').val() === auth.uid) || data.child('uid').val() === auth.uid)",
+            ".write": "auth != null && ((!data.exists() && (!newData.exists() || newData.child('uid').val() === auth.uid)) || data.child('uid').val() === auth.uid)",
             ".validate": "newData.hasChildren(['uid', 'name', 'clientId']) && newData.child('uid').val() === auth.uid && newData.child('clientId').val() === $client"
           }
         }
