@@ -1,5 +1,6 @@
 import { ACTIONS, DRIVES, cleanText, clone, integer, poolFor, defaultSelection, resultFor,
-  validSelections, validateCharacter, validateCircle } from './core.js';
+  validSelections, validateCharacter, validateCircle } from './core.js?v=2';
+import { migrateProgression, resolveIllumination } from './progression.js?v=2';
 
 export const MAX_EVENTS = 100;
 
@@ -135,7 +136,9 @@ export function adjustTrack(state, { characterId, group, key, field = 'current',
     const track = state.resources[key];
     track.current = Math.max(0, Math.min(track.max, track.current + delta));
   } else if (key === 'illumination' || key === 'gildedDice') {
+    if (key === 'illumination') migrateProgression(state);
     state[key] = Math.max(0, Math.min(state[`${key}Max`], state[key] + delta));
+    if (key === 'illumination') resolveIllumination(state);
   } else throw new Error('That track cannot be adjusted.');
 }
 
@@ -168,5 +171,6 @@ export function updateCircle(state, patch, expectedRevision) {
   }
   for (const key of ['name', 'chapterHouse', 'tone', 'feel']) state[key] = cleanText(state[key], 60);
   state.notes = cleanText(state.notes);
+  migrateProgression(state);
   validateCircle(state);
 }

@@ -31,7 +31,7 @@ export function secureD6() {
 }
 
 export function poolFor({ rating, driveSpend = 0, bonusDice = 0, circleDie = false,
-  actionGilded = false, extraGilded = 0 }) {
+  actionGilded = false, extraGilded = 0, gildedIndices: chosenIndices }) {
   rating = integer(rating, 0, 3, 'Action rating');
   driveSpend = integer(driveSpend, 0, 6, 'Drive spend');
   bonusDice = integer(bonusDice, 0, 6, 'Bonus dice');
@@ -40,16 +40,30 @@ export function poolFor({ rating, driveSpend = 0, bonusDice = 0, circleDie = fal
   if (requested > 6) throw new Error('The dice pool can contain at most 6 dice.');
   const zeroRating = requested === 0;
   const total = zeroRating ? 2 : requested;
-  const gildedIndices = [];
+  let gildedIndices = [];
   if (actionGilded) gildedIndices.push(0);
   if (circleDie && !gildedIndices.includes(total - 1)) gildedIndices.push(total - 1);
   extraGilded = integer(extraGilded, 0, total - gildedIndices.length, 'Additional gilded dice');
   for (let i = 0; extraGilded > 0 && i < total; i++) {
     if (!gildedIndices.includes(i)) { gildedIndices.push(i); extraGilded--; }
   }
+  if (chosenIndices != null) {
+    if (!Array.isArray(chosenIndices) || chosenIndices.length !== gildedIndices.length) {
+      throw new Error(`Choose exactly ${gildedIndices.length} gilded ${gildedIndices.length === 1 ? 'die' : 'dice'}.`);
+    }
+    const chosen = chosenIndices.map(i => integer(i, 0, total - 1, 'Gilded die'));
+    if (new Set(chosen).size !== chosen.length) throw new Error('Choose each gilded die only once.');
+    if (circleDie && !chosen.includes(total - 1)) throw new Error('The added Circle die must remain gilded.');
+    gildedIndices = chosen;
+  }
+  gildedIndices.sort((a,b) => a-b);
+  const actionPositions = Array.from({ length:rating }, (_,i) => i);
+  const actionGold = gildedIndices.find(i => !circleDie || i !== total - 1);
+  // A selected action gilded die is still an action die when resistance rerolls it.
+  if (actionGilded && rating > 0 && !actionPositions.includes(actionGold)) actionPositions[0] = actionGold;
   return { rating, driveSpend, bonusDice, circleDie: Boolean(circleDie), zeroRating, total,
     gildedIndices: gildedIndices.sort((a, b) => a - b),
-    actionPositions: Array.from({ length: rating }, (_, i) => i) };
+    actionPositions: actionPositions.sort((a,b) => a-b) };
 }
 
 export function defaultSelection(roll) {
@@ -74,6 +88,7 @@ export function resultFor(roll, selectedIndex = roll.selectedIndex) {
 }
 
 export function validateCharacter(character) {
+  if (character.level != null) integer(character.level, 1, 1000, 'Character level');
   if (!cleanText(character.name, 60)) throw new Error('The character needs a name.');
   if (!ACTIONS || !character.actions || !character.drives) throw new Error('The character sheet is incomplete.');
   for (const key of Object.keys(ACTIONS)) integer(character.actions[key]?.rating, 0, 3, `${titleCase(key)} rating`);
@@ -88,6 +103,7 @@ export function validateCharacter(character) {
 }
 
 export function validateCircle(circle) {
+  if (circle?.level != null) integer(circle.level, 1, 1000, 'Circle level');
   if (!circle || circle.schemaVersion !== 1 || !circle.characters || !cleanText(circle.name, 60)) {
     throw new Error('This Circle data is incomplete or from an unsupported version.');
   }

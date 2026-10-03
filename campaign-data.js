@@ -249,7 +249,8 @@ export const CAMPAIGNS = [
         ],
         "illuminationKeyChecks": [],
         "version": 0,
-        "sourceSheet": "Journalist (Wysel)"
+        "sourceSheet": "Journalist (Wysel)",
+        "level": 2
       },
       "keith": {
         "id": "keith",
@@ -437,7 +438,8 @@ export const CAMPAIGNS = [
         ],
         "illuminationKeyChecks": [],
         "version": 0,
-        "sourceSheet": "Journalist (Keith)"
+        "sourceSheet": "Journalist (Keith)",
+        "level": 2
       },
       "excallibur": {
         "id": "excallibur",
@@ -617,7 +619,8 @@ export const CAMPAIGNS = [
         ],
         "illuminationKeyChecks": [],
         "version": 0,
-        "sourceSheet": "Soldier (Excallibur)"
+        "sourceSheet": "Soldier (Excallibur)",
+        "level": 2
       },
       "jack": {
         "id": "jack",
@@ -629,7 +632,7 @@ export const CAMPAIGNS = [
         "catalyst": "The loved ones",
         "question": "Can I live a life my daughter wouldn't be ashamed of?",
         "sourceCircle": "",
-        "portrait": "./assets/jack.png",
+        "portrait": "",
         "actions": {
           "move": {
             "rating": 1,
@@ -801,7 +804,8 @@ export const CAMPAIGNS = [
         ],
         "illuminationKeyChecks": [],
         "version": 0,
-        "sourceSheet": "Criminal (Jack)"
+        "sourceSheet": "Criminal (Jack)",
+        "level": 2
       },
       "camellya": {
         "id": "camellya",
@@ -977,7 +981,8 @@ export const CAMPAIGNS = [
         ],
         "illuminationKeyChecks": [],
         "version": 0,
-        "sourceSheet": "Occultist (Camellya)"
+        "sourceSheet": "Occultist (Camellya)",
+        "level": 2
       }
     },
     "characterOrder": [
@@ -989,6 +994,7 @@ export const CAMPAIGNS = [
     ],
     "events": {},
     "sourceWorkbook": "Character Sheets for Candela Group The Prophets.xlsx",
-    "sourceNotes": "The Circle Sheet has no Circle name, so this app uses The Prophets. Excallibur lists Circle of Judgement in his original sheet. Current drives, resistances and resources are imported exactly as recorded. The other seven tabs are unfilled character templates and are not seats."
+    "sourceNotes": "The Circle Sheet has no Circle name, so this app uses The Prophets. Excallibur lists Circle of Judgement in his original sheet. Current drives, resistances and resources are imported exactly as recorded. The other seven tabs are unfilled character templates and are not seats.",
+    "level": 2
   }
 ];

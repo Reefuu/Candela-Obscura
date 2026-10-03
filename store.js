@@ -1,5 +1,6 @@
-import { firebaseConfig } from './firebase-config.js';
-import { clone, validateCircle } from './core.js';
+import { firebaseConfig } from './firebase-config.js?v=2';
+import { clone, validateCircle } from './core.js?v=2';
+import { migrateProgression } from './progression.js?v=2';
 
 const PREFIX = 'candela-obscura-v1:';
 const makeId = () => crypto.randomUUID();
@@ -23,7 +24,7 @@ function normalize(state) {
   for (const character of Object.values(state.characters || {})) {
     for (const key of ['abilities', 'gear', 'relationships', 'illuminationKeys']) character[key] ||= [];
   }
-  return state;
+  return migrateProgression(state);
 }
 
 export async function createStore(onStatus) {
@@ -73,7 +74,9 @@ class LocalStore {
     return this.lock(seed.id, () => {
       let state = this.read(seed.id);
       if (!state) { state = clone(seed); localStorage.setItem(this.key(seed.id), JSON.stringify(state)); }
+      normalize(state);
       validateCircle(state);
+      localStorage.setItem(this.key(seed.id), JSON.stringify(state));
       return state;
     });
   }
@@ -169,7 +172,7 @@ class FirebaseStore {
       this.onStatus(this.online ? 'Table connected' : 'Reconnecting…', this.online ? 'online' : 'offline');
       if (this.online && this.presenceRef && this.presenceData) this.writePresence().catch(error => this.onStatus(friendlyError(error), 'error'));
     });
-    window.addEventListener('pagehide', () => { if (this.presenceRef) dbSDK.remove(this.presenceRef).catch(() => { }); });
+    window.addEventListener('pagehide', () => { if (this.presenceRef) dbSDK.remove(this.presenceRef).catch(() => {}); });
   }
   async connected() {
     if (this.online) return;
@@ -184,7 +187,7 @@ class FirebaseStore {
   async ensureCircle(seed) {
     await this.connected();
     const { ref, runTransaction } = this.sdk;
-    const result = await runTransaction(ref(this.db, `candela/circles/${seed.id}`), current => current ?? clone(seed), { applyLocally: false });
+    const result = await runTransaction(ref(this.db, `candela/circles/${seed.id}`), current => normalize(clone(current ?? seed)), { applyLocally: false });
     if (!result.committed) throw new Error('Could not open this Circle.');
     const state = normalize(result.snapshot.val());
     validateCircle(state);
