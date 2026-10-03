@@ -13,6 +13,12 @@ Version 1.1.1 fixes the misleading access warning when rolls and sheets work but
 
 Online player connection problems are shown in the player-list area. Real Circle access and save errors remain visible. Upload `index.html`, `app.js`, and `store.js` together so the page loads this fix instead of cached scripts. You do not need to reset your database or replace your Firebase config.
 
+## Refresh pictures
+
+Version 1.1.2 requests GitHub-hosted character portraits with a fresh image URL whenever the page opens or reloads. After replacing a picture in `assets` with the same filename, wait for the GitHub Pages deployment to finish and reload your app. You can also click **Refresh pictures ↻** in the top bar to request updated portraits while staying on the current screen. On a phone, the button is the **↻** icon.
+
+The button refreshes portraits without changing your seat, draft messages, roll settings, or saved Circle. It keeps the portrait path stored in Firebase unchanged. External image URLs keep their original URL, including any signed parameters. If you upload a different filename, update the character's `portrait` field in Firebase to match it.
+
 ## Gilded dice
 
 Choose an action and build its pool. Click the numbered dice in **Your dice pool** to choose which dice are gilded before rolling. The number of gilded dice comes from your action, extra gilded dice, and any shared Circle die. Clicking a standard die swaps the gilded choice when the pool already has the required number. A Circle die is always gilded.

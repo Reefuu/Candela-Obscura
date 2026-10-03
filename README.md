@@ -23,6 +23,8 @@ With empty Firebase placeholders, the app offers a clearly labelled local previe
 
 Version 1.1.1 supports the earlier player-presence rules and keeps online-player indicator problems separate from Circle access and save failures. See `UPDATE_EXISTING.md` to update your running GitHub Pages app.
 
+Version 1.1.2 refreshes GitHub-hosted portraits on page load and adds **Refresh pictures ↻** in the top bar. Replace a portrait using its existing filename, wait for deployment, then reload or use the button.
+
 ## Files
 
 | File | Purpose |

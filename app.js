@@ -10,6 +10,7 @@ import { advancementCycles, pendingCircleAdvance, pendingCharacterAdvance, choos
 const $ = selector => document.querySelector(selector);
 const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const id = () => crypto.randomUUID();
+let portraitRevision = id();
 let store, circle, seat = null, activeTab = 'character', action = 'survey';
 let unsubscribeCircle, unsubscribePresence, peers = [], busy = false, opening = false;
 let presenceReadError = null, presenceWriteError = null;
@@ -47,8 +48,23 @@ function currentURL(withSeat = false) {
   return url;
 }
 function updateURL() { history.replaceState({}, '', currentURL(true)); }
+function portraitSource(path) {
+  if (!path) return '';
+  try {
+    const url = new URL(path, location.href);
+    // Keep external and signed URLs intact; GitHub-hosted portraits get a fresh request.
+    if (url.origin !== location.origin || !['http:', 'https:'].includes(url.protocol)) return path;
+    url.searchParams.set('candela-picture', portraitRevision);
+    return url.href;
+  } catch { return path; }
+}
+function refreshPictures() {
+  portraitRevision = id();
+  for (const image of document.querySelectorAll('img[data-portrait]')) image.src = portraitSource(image.dataset.portrait);
+  toast('Reloading pictures…');
+}
 function portraitMarkup(c, className = 'seat-avatar') {
-  return `<span class="${className}">${c.portrait ? `<img src="${html(c.portrait)}" alt="" loading="lazy">` : html(c.name?.slice(0, 1) || '?')}</span>`;
+  return `<span class="${className}">${c.portrait ? `<img src="${html(portraitSource(c.portrait))}" data-portrait="${html(c.portrait)}" alt="" loading="lazy">` : html(c.name?.slice(0, 1) || '?')}</span>`;
 }
 function dots(current, max, className = 'track-pip') {
   return Array.from({ length: max }, (_, i) => `<span class="${className}${i < current ? ' filled' : ''}"></span>`).join('');
@@ -79,7 +95,7 @@ function renderRoster() {
   $('#character-grid').innerHTML = circle.characterOrder.filter(key => circle.characters[key]).map((key, index) => {
     const c = circle.characters[key];
     return `<button class="character-card" data-command="seat" data-character="${html(key)}" aria-label="Play ${html(c.name)}">
-      <span class="portrait${c.portrait ? '' : ' portrait-monogram'}">${c.portrait ? `<img src="${html(c.portrait)}" alt="${html(c.name)}" loading="lazy">` : html(c.name.split(' ').map(v => v[0]).join(''))}<span class="portrait-number">${String(index + 1).padStart(2, '0')}</span></span>
+      <span class="portrait${c.portrait ? '' : ' portrait-monogram'}">${c.portrait ? `<img src="${html(portraitSource(c.portrait))}" data-portrait="${html(c.portrait)}" alt="${html(c.name)}" loading="lazy">` : html(c.name.split(' ').map(v => v[0]).join(''))}<span class="portrait-number">${String(index + 1).padStart(2, '0')}</span></span>
       <span class="character-card-content"><span class="eyebrow">${html(c.role)} / ${html(c.specialty)} · LEVEL ${c.level || 2}</span><h3>${html(c.name)}</h3><span class="pronouns">${html(c.pronouns)}</span><span class="mini-drives">${DRIVES.map(d => `<span>${titleCase(d)}<strong>${c.drives[d].current} / ${c.drives[d].max}</strong></span>`).join('')}</span></span>
       <span class="character-card-footer">Open character <span aria-hidden="true">↗</span></span></button>`;
   }).join('');
@@ -527,6 +543,7 @@ document.addEventListener('click', async event => {
   if (!button || button.disabled) return;
   const d = button.dataset;
   try {
+    if (d.command === 'refresh-pictures') return refreshPictures();
     if (d.command === 'circle') return await openCircle(d.circle);
     if (d.command === 'home') return await goHome();
     if (d.command === 'roster') return await showRoster();
