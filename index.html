@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#141916">
+  <meta name="description" content="The Prophets' Candela Obscura table. Choose your Circle, open your character, and roll together.">
+  <title>Candela Obscura · The Prophets</title>
+  <link rel="icon" href="./assets/seal.png">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="./" aria-label="Candela Obscura home">
+      <span class="brand-symbol" aria-hidden="true">✧</span>
+      <span>CANDELA <span class="brand-second">OBSCURA</span></span>
+    </a>
+    <div class="masthead-end">
+      <span id="connection-status" class="connection connecting" role="status">Opening the archive…</span>
+      <button id="help-button" class="quiet-button" type="button">Field guide <span aria-hidden="true">↗</span></button>
+    </div>
+  </header>
+
+  <div id="mode-banner" class="mode-banner" hidden>
+    <span class="preview-dot" aria-hidden="true"></span>
+    <p><strong>Local preview.</strong> Your changes stay in this browser. Connect the new Firebase project to play together.</p>
+    <a href="./START_HERE.md" target="_blank" rel="noopener">Setup instructions <span aria-hidden="true">↗</span></a>
+  </div>
+
+  <main id="main">
+    <section id="library-view" class="archive page-width">
+      <div class="archive-heading">
+        <p class="eyebrow">THE INVESTIGATORS’ ARCHIVE <span class="small-line" aria-hidden="true"></span> THE PROPHETS</p>
+        <h1>Choose your <em>circle.</em></h1>
+        <p class="intro">A familiar table. A new mystery.<br>Everything you need, waiting where you left it.</p>
+        <div class="archive-seal" aria-hidden="true"><img src="./assets/seal.png" alt=""></div>
+      </div>
+      <div class="section-label"><h2>Your circles</h2><span id="circle-count">01</span></div>
+      <div id="circles-list" class="circles-list"><p class="muted">Loading your Circle…</p></div>
+      <p id="opening-error" class="inline-error" role="alert"></p>
+      <div class="archive-footer"><span>FOR THOSE WHO STAND BETWEEN THE LIGHT AND THE BLEED</span><span aria-hidden="true">✧</span></div>
+    </section>
+
+    <section id="roster-view" class="archive page-width" hidden>
+      <nav class="breadcrumbs" aria-label="Breadcrumb"><button class="link-button" data-command="home">All circles</button><span aria-hidden="true">/</span><span id="roster-circle-name">The Prophets</span></nav>
+      <div class="roster-heading">
+        <p class="eyebrow">YOUR CIRCLE IS WAITING</p>
+        <h1>Who answers <em>the call?</em></h1>
+        <p class="intro">Choose your investigator. Their sheet and dice are ready.</p>
+      </div>
+      <div id="character-grid" class="character-grid"></div>
+      <button class="lightkeeper-card" data-command="seat" data-character="gm">
+        <span class="keeper-symbol" aria-hidden="true">✧</span><span><span class="eyebrow">GUIDE THE INVESTIGATION</span><strong>The Lightkeeper</strong><span class="muted">Open the Circle sheet and oversee the table.</span></span><span class="card-arrow" aria-hidden="true">↗</span>
+      </button>
+    </section>
+
+    <section id="table-view" class="table-shell" hidden>
+      <aside class="table-sidebar">
+        <div class="sidebar-circle"><p class="eyebrow">THE CIRCLE</p><h2 id="sidebar-circle-name">The Prophets</h2><button class="link-button" data-command="roster">Switch seat <span aria-hidden="true">↗</span></button></div>
+        <nav id="seat-list" class="seat-list" aria-label="Investigators"></nav>
+        <div class="sidebar-bottom"><p class="eyebrow">AT THE TABLE <span id="peer-count">0</span></p><div id="presence-list" class="presence-list"></div><button class="quiet-button" data-command="invite">Copy Circle link <span aria-hidden="true">↗</span></button><button class="quiet-button" data-command="backup">Export backup <span aria-hidden="true">↓</span></button><button class="quiet-button" data-command="home">All circles <span aria-hidden="true">←</span></button></div>
+      </aside>
+      <div class="table-main">
+        <header class="character-heading"><div><p id="character-eyebrow" class="eyebrow"></p><h1 id="character-name"></h1><p id="character-subtitle" class="muted"></p></div><button id="edit-character" class="outline-button" data-command="edit-character">Edit sheet <span aria-hidden="true">↗</span></button></header>
+        <nav class="tabs" aria-label="Table pages">
+          <button id="tab-character" class="tab active" data-command="tab" data-tab="character" aria-pressed="true">Actions & drives</button>
+          <button id="tab-dossier" class="tab" data-command="tab" data-tab="dossier" aria-pressed="false">Dossier</button>
+          <button id="tab-circle" class="tab" data-command="tab" data-tab="circle" aria-pressed="false">Circle sheet</button>
+          <button id="tab-log" class="tab" data-command="tab" data-tab="log" aria-pressed="false">Table log</button>
+        </nav>
+        <div class="table-columns">
+          <div class="sheet-column"><div id="sheet-content"></div><section id="feed-panel" class="panel feed-panel"><div class="panel-heading"><div><p class="eyebrow">AT THE TABLE</p><h2>Rolls & conversation</h2></div><span class="live-label"><span></span>Shared log</span></div><div id="feed" class="feed" aria-live="polite" aria-relevant="additions"></div><form id="chat-form" class="chat-form"><label class="sr-only" for="chat-input">Message your Circle</label><input id="chat-input" maxlength="500" placeholder="A word to your Circle…" autocomplete="off"><button class="outline-button" type="submit">Send <span aria-hidden="true">↗</span></button></form></section></div>
+          <aside class="roller-column"><section class="panel roller-panel"><div class="panel-heading"><div><p class="eyebrow">THE ROLL DESK</p><h2 id="roll-action-name">Survey</h2></div><span id="roll-gilded-badge" class="gilded-badge" hidden>◆ Gilded</span></div><p id="roll-action-hint" class="muted"></p><div id="gm-rating-field" class="gm-rating-field" hidden><label for="gm-rating">Action rating</label><select id="gm-rating"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option></select><label class="checkbox-label"><input id="gm-gilded" type="checkbox"> Gild this action</label></div>
+          <div class="pool-controls"><div class="pool-control"><div><label for="drive-spend">Spend drive</label><span id="drive-spend-note" class="control-note"></span></div><select id="drive-spend" aria-label="Spend drive"></select></div><div class="pool-control"><div><label for="bonus-dice">Bonus dice</label><span class="control-note">Help or an ability · adjust costs on the sheet</span></div><select id="bonus-dice" aria-label="Bonus dice"></select></div><div class="pool-control"><div><label for="extra-gilded">Extra gilded dice</label><span class="control-note">From an ability</span></div><select id="extra-gilded" aria-label="Extra gilded dice"></select></div><label id="circle-die-label" class="circle-die-label"><input id="circle-die" type="checkbox"><span>Use a Circle gilded die<span id="circle-die-note" class="control-note">Stamina Training</span></span><span class="gold" aria-hidden="true">◆</span></label></div>
+          <div class="pool-preview"><span class="eyebrow">YOUR DICE POOL</span><div id="pool-dice" class="pool-dice" aria-hidden="true"></div><p id="pool-summary"></p></div><label class="sr-only" for="roll-note">Roll note</label><input id="roll-note" maxlength="160" placeholder="What are you attempting? (optional)"><button id="roll-button" class="primary-button" type="button"><span aria-hidden="true">✧</span> Roll dice <span aria-hidden="true">↗</span></button><p class="roller-footnote">Pick an action on your sheet to prepare its dice.</p></section><div id="latest-result" class="latest-result"></div></aside>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <dialog id="edit-dialog"><form id="edit-form"><div class="dialog-heading"><div><p class="eyebrow">THE ARCHIVE</p><h2 id="edit-title">Edit sheet</h2></div><button class="icon-button" type="button" data-command="close-dialog" aria-label="Close editor">×</button></div><div id="edit-fields" class="edit-fields"></div><p id="edit-error" class="inline-error" role="alert"></p><div class="dialog-footer"><button class="quiet-button" type="button" data-command="close-dialog">Cancel</button><button class="primary-button" type="submit" id="save-edit">Save changes</button></div></form></dialog>
+  <dialog id="help-dialog" class="help-dialog"><div class="dialog-heading"><div><p class="eyebrow">PLAYER’S FIELD GUIDE</p><h2>Your table, in one place.</h2></div><button class="icon-button" type="button" data-command="close-help" aria-label="Close field guide">×</button></div><div class="help-content"><p>Choose your Circle, then your character. Click an action to load its rating and gilded die.</p><h3>Build your pool</h3><p>Spend drive for extra dice. The app deducts those points when you roll. Add bonus dice for help or an ability and adjust any related costs on the sheet. A Stamina Training die spends one of your Circle’s shared gilded dice.</p><h3>Choose the result</h3><p>The normal result is selected for you. You can choose a gilded alternative, then accept the result. Accepting a gilded result recovers one corresponding drive, up to its maximum, once for that roll.</p><h3>Burn resistance</h3><p>Resistance rerolls the action dice and keeps bonus dice. The app deducts one matching resistance. Use the newest resistance result to reroll again. You can always make a fresh action roll using the Roll button.</p><h3>Keep the sheet current</h3><p>Use the small + and − buttons for drives, resistance, marks, and Circle resources. Edit sheet changes ratings, gilded actions, ability choices, and your dossier. Scars and the narrative effects of abilities are recorded manually with your GM.</p><h3>Your Circle</h3><p>The Circle sheet tracks illumination and downtime resources. Export backup saves a copy of your Circle, including the latest 100 log entries. Everyone at this trusted table can edit sheets. The Lightkeeper seat is a view for the GM.</p><p><a href="https://darringtonpress.com/candela/" target="_blank" rel="noopener">Official Candela Obscura resources ↗</a></p></div></dialog>
+  <noscript><p class="inline-error page-width">Enable JavaScript to open your Circle.</p></noscript>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

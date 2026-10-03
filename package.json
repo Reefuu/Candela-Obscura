@@ -1,0 +1,8 @@
+{
+  "name": "candela-obscura-the-prophets",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Prophets' Circle, character sheets and shared dice table",
+  "scripts": { "test": "node --test tests/*.test.js" }
+}
