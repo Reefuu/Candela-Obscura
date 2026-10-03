@@ -2,7 +2,7 @@
 
 1. Unzip `Candela-Obscura-update.zip`.
 2. In your existing `Reefuu/Candela-Obscura` GitHub repository, use **Add file → Upload files**.
-3. Upload all the extracted files to the repository's top level, preserving the `tests` folder. Commit the replacements.
+3. Upload all the extracted files to the repository's top level, preserving the `tests` and `assets` folders. Commit the replacements. The new portrait belongs at `assets/sol.png`.
 4. Wait for the GitHub Pages deployment, then reload your site. On a Mac, use **Cmd + Shift + R** to load the updated files.
 
 The update ZIP contains the changed app files and does not contain `firebase-config.js`. Your configured Firebase project and saved Circle carry over. Keep using the corrected `firebase-rules.json` from the previous access fix; these features use the same database permissions.
@@ -18,6 +18,12 @@ Online player connection problems are shown in the player-list area. Real Circle
 Version 1.1.2 requests GitHub-hosted character portraits with a fresh image URL whenever the page opens or reloads. After replacing a picture in `assets` with the same filename, wait for the GitHub Pages deployment to finish and reload your app. You can also click **Refresh pictures ↻** in the top bar to request updated portraits while staying on the current screen. On a phone, the button is the **↻** icon.
 
 The button refreshes portraits without changing your seat, draft messages, roll settings, or saved Circle. It keeps the portrait path stored in Firebase unchanged. External image URLs keep their original URL, including any signed parameters. If you upload a different filename, update the character's `portrait` field in Firebase to match it.
+
+## Sol, your Lightkeeper
+
+Version 1.1.3 names your existing Lightkeeper seat **Sol** and uses your supplied artwork at `assets/sol.png`. Sol appears on the roster card, in the sidebar, and in the seat heading. New Lightkeeper rolls, chat messages, and online presence use Sol's name.
+
+This works with your existing saved Circle without a Firebase edit. Sol keeps the Lightkeeper's Circle overview and freeform dice; the five investigators keep their own advancement choices. Existing log entries keep their original authors. The update includes only Sol's new portrait, so your other uploaded pictures are preserved.
 
 ## Gilded dice
 

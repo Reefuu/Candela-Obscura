@@ -10,6 +10,7 @@ import { advancementCycles, pendingCircleAdvance, pendingCharacterAdvance, choos
 const $ = selector => document.querySelector(selector);
 const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const id = () => crypto.randomUUID();
+const LIGHTKEEPER = { name: 'Sol', portrait: './assets/sol.png' };
 let portraitRevision = id();
 let store, circle, seat = null, activeTab = 'character', action = 'survey';
 let unsubscribeCircle, unsubscribePresence, peers = [], busy = false, opening = false;
@@ -92,6 +93,8 @@ function renderLibrary() {
 }
 function renderRoster() {
   $('#roster-circle-name').textContent = circle.name;
+  $('#lightkeeper-card').setAttribute('aria-label', `Play ${LIGHTKEEPER.name}, the Lightkeeper`);
+  $('#lightkeeper-card').innerHTML = `${portraitMarkup(LIGHTKEEPER, 'keeper-portrait')}<span><span class="eyebrow">THE LIGHTKEEPER</span><strong>${html(LIGHTKEEPER.name)}</strong><span class="muted">Open the Circle sheet and oversee the table.</span></span><span class="card-arrow" aria-hidden="true">↗</span>`;
   $('#character-grid').innerHTML = circle.characterOrder.filter(key => circle.characters[key]).map((key, index) => {
     const c = circle.characters[key];
     return `<button class="character-card" data-command="seat" data-character="${html(key)}" aria-label="Play ${html(c.name)}">
@@ -146,7 +149,7 @@ async function selectSeat(key) {
   renderTable();
   showView('table');
   updateURL();
-  try { await store.setPresence(circle.id, character()?.name || 'Lightkeeper', key); }
+  try { await store.setPresence(circle.id, character()?.name || LIGHTKEEPER.name, key); }
   catch (error) { presenceStatus(error); }
 }
 async function goHome() {
@@ -171,7 +174,7 @@ function renderSeats() {
   $('#seat-list').innerHTML = circle.characterOrder.filter(key => circle.characters[key]).map(key => {
     const c = circle.characters[key];
     return `<button class="seat-button${seat === key ? ' active' : ''}" data-command="seat" data-character="${html(key)}" aria-label="Switch to ${html(c.name)}" ${seat === key ? 'aria-current="true"' : ''}>${portraitMarkup(c)}<span><strong>${html(c.name)}</strong><small>${html(c.specialty)}</small></span></button>`;
-  }).join('') + `<button class="seat-button${seat === 'gm' ? ' active' : ''}" data-command="seat" data-character="gm"><span class="seat-avatar" aria-hidden="true">✧</span><span><strong>Lightkeeper</strong><small>Guide the table</small></span></button>`;
+  }).join('') + `<button class="seat-button${seat === 'gm' ? ' active' : ''}" data-command="seat" data-character="gm" aria-label="Switch to ${html(LIGHTKEEPER.name)}, the Lightkeeper" ${seat === 'gm' ? 'aria-current="true"' : ''}>${portraitMarkup(LIGHTKEEPER)}<span><strong>${html(LIGHTKEEPER.name)}</strong><small>Lightkeeper</small></span></button>`;
   renderPresence();
 }
 function renderPresence() {
@@ -185,9 +188,9 @@ function renderPresence() {
 }
 function renderTable() {
   const c = character();
-  $('#character-eyebrow').textContent = c ? `${c.role} / ${c.specialty}` : 'GUIDE THE INVESTIGATION';
-  $('#character-name').textContent = c?.name || 'The Lightkeeper';
-  $('#character-subtitle').textContent = c ? `${c.pronouns} · Level ${c.level || 2} · ${circle.name}` : `${circle.name} · Circle overview & freeform dice`;
+  $('#character-eyebrow').textContent = c ? `${c.role} / ${c.specialty}` : 'THE LIGHTKEEPER';
+  $('#character-name').textContent = c?.name || LIGHTKEEPER.name;
+  $('#character-subtitle').textContent = c ? `${c.pronouns} · Level ${c.level || 2} · ${circle.name}` : `Lightkeeper · ${circle.name} · Circle overview & freeform dice`;
   $('#edit-character').hidden = !c;
   for (const tab of ['character', 'dossier', 'circle', 'log']) {
     const button = $(`#tab-${tab}`);
@@ -370,7 +373,7 @@ async function makeRoll() {
   const characterId = character()?.id || '', selectedAction = action, note = cleanText($('#roll-note').value, 160);
   await mutate(state => {
     addRoll(state, { id:rollId, uid:store.uid, characterId, action:selectedAction, options:opts,
-      randomDice, createdAt:Date.now(), expectedRating:opts.rating, expectedGilded:opts.actionGilded });
+      gmName:LIGHTKEEPER.name, randomDice, createdAt:Date.now(), expectedRating:opts.rating, expectedGilded:opts.actionGilded });
     if (note) state.events[rollId].note = note;
   });
   latestId = rollId;
@@ -525,7 +528,7 @@ async function saveEditor(event) {
     }
     $('#edit-dialog').close(); toast(editKind === 'clear' ? 'Table log cleared.' : editKind === 'circle-advance' ? 'Circle ability chosen. Character upgrades are ready.' : editKind === 'character-advance' ? 'Advancement saved.' : 'Changes saved.');
     if (seat) {
-      try { await store.setPresence(circle.id, character()?.name || 'Lightkeeper', seat); }
+      try { await store.setPresence(circle.id, character()?.name || LIGHTKEEPER.name, seat); }
       catch (error) { presenceStatus(error); }
     }
   } catch (error) { $('#edit-error').textContent = friendlyError(error); }
@@ -595,7 +598,7 @@ $('#edit-dialog').addEventListener('cancel',event => { if (busy) event.preventDe
 $('#help-button').addEventListener('click',() => $('#help-dialog').showModal());
 $('#chat-form').addEventListener('submit',async event => {
   event.preventDefault(); const message = cleanText($('#chat-input').value,500); if (!message) return;
-  const messageId = id(), author = character()?.name || 'Lightkeeper';
+  const messageId = id(), author = character()?.name || LIGHTKEEPER.name;
   await run(async () => { await mutate(state => addChat(state,{ id:messageId, uid:store.uid, author, message, createdAt:Date.now() })); $('#chat-input').value = ''; });
 });
 

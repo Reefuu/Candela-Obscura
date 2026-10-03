@@ -25,6 +25,8 @@ Version 1.1.1 supports the earlier player-presence rules and keeps online-player
 
 Version 1.1.2 refreshes GitHub-hosted portraits on page load and adds **Refresh pictures ↻** in the top bar. Replace a portrait using its existing filename, wait for deployment, then reload or use the button.
 
+Version 1.1.3 adds **Sol**, your Lightkeeper, with the supplied portrait on the roster and sidebar. New Lightkeeper rolls, chat, and online presence are attributed to Sol.
+
 ## Files
 
 | File | Purpose |

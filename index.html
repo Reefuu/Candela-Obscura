@@ -7,7 +7,7 @@
   <meta name="description" content="The Prophets' Candela Obscura table. Choose your Circle, open your character, and roll together.">
   <title>Candela Obscura · The Prophets</title>
   <link rel="icon" href="./assets/seal.png">
-  <link rel="stylesheet" href="./style.css?v=2">
+  <link rel="stylesheet" href="./style.css?v=3">
 </head>
 <body>
   <header class="masthead">
@@ -50,8 +50,8 @@
         <p class="intro">Choose your investigator. Their sheet and dice are ready.</p>
       </div>
       <div id="character-grid" class="character-grid"></div>
-      <button class="lightkeeper-card" data-command="seat" data-character="gm">
-        <span class="keeper-symbol" aria-hidden="true">✧</span><span><span class="eyebrow">GUIDE THE INVESTIGATION</span><strong>The Lightkeeper</strong><span class="muted">Open the Circle sheet and oversee the table.</span></span><span class="card-arrow" aria-hidden="true">↗</span>
+      <button id="lightkeeper-card" class="lightkeeper-card" data-command="seat" data-character="gm" aria-label="Play Sol, the Lightkeeper">
+        <span class="keeper-symbol" aria-hidden="true">✧</span><span><span class="eyebrow">THE LIGHTKEEPER</span><strong>Sol</strong><span class="muted">Open the Circle sheet and oversee the table.</span></span><span class="card-arrow" aria-hidden="true">↗</span>
       </button>
     </section>
 
@@ -83,6 +83,6 @@
   <dialog id="edit-dialog"><form id="edit-form"><div class="dialog-heading"><div><p class="eyebrow">THE ARCHIVE</p><h2 id="edit-title">Edit sheet</h2></div><button class="icon-button" type="button" data-command="close-dialog" aria-label="Close editor">×</button></div><div id="edit-fields" class="edit-fields"></div><p id="edit-error" class="inline-error" role="alert"></p><div class="dialog-footer"><button class="quiet-button" type="button" data-command="close-dialog">Cancel</button><button class="primary-button" type="submit" id="save-edit">Save changes</button></div></form></dialog>
   <dialog id="help-dialog" class="help-dialog"><div class="dialog-heading"><div><p class="eyebrow">PLAYER’S FIELD GUIDE</p><h2>Your table, in one place.</h2></div><button class="icon-button" type="button" data-command="close-help" aria-label="Close field guide">×</button></div><div class="help-content"><p>Choose your Circle, then your character. Click an action to load its rating and gilded die.</p><h3>Build your pool</h3><p>Spend drive for extra dice. The app deducts those points when you roll. Add bonus dice for help or an ability and adjust any related costs on the sheet. Click the numbered pool dice to choose which are gilded before rolling. A Stamina Training die spends one of your Circle’s shared gilded dice.</p><h3>Choose the result</h3><p>The normal result is selected for you. You can choose a gilded alternative, then accept the result. Accepting a gilded result recovers one corresponding drive, up to its maximum, once for that roll.</p><h3>Burn resistance</h3><p>Resistance rerolls the action dice and keeps bonus dice. The app deducts one matching resistance. Use the newest resistance result to reroll again. You can always make a fresh action roll using the Roll button.</p><h3>Keep the sheet current</h3><p>Use the small + and − buttons for drives, resistance, marks, and Circle resources. Edit sheet changes ratings, gilded actions, ability choices, and your dossier. Scars and the narrative effects of abilities are recorded manually with your GM.</p><h3>Your Circle</h3><p>The Circle sheet tracks illumination, level, and downtime resources. At 24 illumination it gains a level and resets the track. Choose a new Circle ability, then each character chooses two different advancement options. All characters begin at level 2, and ability choices can come from any class. Choose abilities also lets you correct abilities already owned. Export backup saves a copy of your Circle, including the latest 100 log entries. Everyone at this trusted table can edit sheets. The Lightkeeper seat is a view for the GM.</p><p><a href="https://darringtonpress.com/candela/" target="_blank" rel="noopener">Official Candela Obscura resources ↗</a></p></div></dialog>
   <noscript><p class="inline-error page-width">Enable JavaScript to open your Circle.</p></noscript>
-  <script type="module" src="./app.js?v=4"></script>
+  <script type="module" src="./app.js?v=5"></script>
 </body>
 </html>
