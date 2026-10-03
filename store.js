@@ -9,7 +9,6 @@ export function friendlyError(error) {
   const message = String(error?.message || error || 'Could not save this change.');
   if (code.includes('operation-not-allowed')) return 'Enable Anonymous sign-in in the NEW Firebase project’s Authentication settings.';
   if (code.includes('unauthorized-domain')) return 'Add your GitHub Pages domain to the NEW Firebase project’s authorized domains.';
-  if (/permission.?denied/i.test(code + message)) return '';
   if (/invalid-api-key|api-key-not-valid/i.test(code + message)) return 'The Firebase API key is invalid. Check firebase-config.js.';
   if (/network|fetch|loading dynamically imported|importing a module/i.test(code + message)) return 'Could not reach Firebase. Check your connection, then reload.';
   return message;
