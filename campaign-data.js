@@ -632,7 +632,7 @@ export const CAMPAIGNS = [
         "catalyst": "The loved ones",
         "question": "Can I live a life my daughter wouldn't be ashamed of?",
         "sourceCircle": "",
-        "portrait": ".assets/jack.png",
+        "portrait": "./assets/jack.png",
         "actions": {
           "move": {
             "rating": 1,
