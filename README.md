@@ -1,10 +1,10 @@
 # Candela Obscura — The Prophets
 
-A static GitHub Pages app with permanent Circle and character selection, imported character sheets, action dice, gilded results, resistance, live conversation, and Circle resources.
+A static GitHub Pages app with permanent Circle and character selection, imported character sheets, action dice, gilded results, resistance, live conversation, Circle resources, and a shared Canva article archive.
 
 **Setup: [START_HERE.md](START_HERE.md).** Create a new Firebase project, fill in `firebase-config.js`, and upload this folder's contents to the new `Reefuu/Candela-Obscura` repository.
 
-**Already running the app? Use [UPDATE_EXISTING.md](UPDATE_EXISTING.md).** Version 1.1 adds selectable gilded dice, abilities from every class, and Circle and character advancement while preserving existing live data.
+**Already running the app? Use [UPDATE_EXISTING.md](UPDATE_EXISTING.md).** Version 1.2 adds the Articles archive, alongside selectable gilded dice and unrestricted character advancement, while preserving existing live data.
 
 ## Use it
 
@@ -27,6 +27,8 @@ Version 1.1.2 refreshes GitHub-hosted portraits on page load and adds **Refresh 
 
 Version 1.1.3 adds **Sol**, your Lightkeeper, with the supplied portrait on the roster and sidebar. New Lightkeeper rolls, chat, and online presence are attributed to Sol.
 
+Version 1.2 adds the **Articles** tab with Wysel’s supplied newspaper image, **All / Keith / Wysel** filters, a full-size reader, and add/edit/remove controls. Upload new Canva PNG or JPG exports to `assets/articles`, then enter their paths in **Add article**. Optional titles, publication names, and dates stay in Firebase with the Circle. The archive survives clearing the table log and includes safeguards against simultaneous edits.
+
 ## Files
 
 | File | Purpose |
@@ -36,10 +38,11 @@ Version 1.1.3 adds **Sol**, your Lightkeeper, with the supplied portrait on the 
 | `store.js` | Local preview or Firebase Realtime Database |
 | `campaign-data.js` | Initial imported Circle and five character sheets |
 | `ability-catalog.js`, `progression.js` | All-class ability choices, level migration, and persistent advancements |
+| `articles.js` | Persistent article archive, one-time example migration, and shared edit protection |
 | `firebase-config.js` | Configuration for the new Firebase project |
 | `firebase-rules.json` | Rules for the new database |
 | `assets/` | Existing portraits and seal from the workbook |
-| `tests/` | Dice, resource, migration, and advancement regression tests |
+| `tests/` | Dice, resource, migration, advancement, presence, and article regression tests |
 
 ## Run locally
 
@@ -55,7 +58,7 @@ To run the game/state tests with Node.js 22 or newer:
 npm test
 ```
 
-Validation completed: 25 game/state tests, plus desktop and 390px phone browser checks for chosen gilded dice, resistance and repeat rolls, unrestricted abilities, Circle advancement, every character upgrade type, pending choices, stale-editor protection, and reload persistence. Firebase emulator checks covered existing-data migration and simultaneous illumination and character advancement transactions, alongside authentication, presence cleanup, and ordinary table updates. Live Firebase play still needs your project's config and the two-browser check in START_HERE.md.
+Validation completed: 42 game, progression, presence, and archive tests. Desktop and 390px phone browser checks cover original-quality article images, author filters, add/edit/remove controls, bad-path rejection, full-size zoom and panning, picture refresh, shared updates, stale editors, backups, and reload persistence. Firebase emulator checks use the production store and published rules to verify archive migration, simultaneous additions and conversation, clearing the log, reconnecting, and permanently removing every article. Existing sheet and advancement checks also remain covered. Live Firebase play still needs your project’s config and the two-browser check in START_HERE.md.
 
 The app uses native browser modules, the Firebase Web SDK, and browser `crypto.getRandomValues()` for dice. Rolls are generated on each player's device and are suitable for a friendly tabletop group. Authentication and database rules protect database access; they do not provide server-authoritative dice or private membership gates. Hosting this repository publicly makes its initial character sheets and artwork publicly accessible.
 

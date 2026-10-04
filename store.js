@@ -1,6 +1,7 @@
 import { firebaseConfig } from './firebase-config.js?v=2';
 import { clone, validateCircle } from './core.js?v=2';
 import { migrateProgression } from './progression.js?v=2';
+import { migrateArticles } from './articles.js?v=1';
 
 const PREFIX = 'candela-obscura-v1:';
 const makeId = () => crypto.randomUUID();
@@ -25,7 +26,7 @@ function normalize(state) {
   for (const character of Object.values(state.characters || {})) {
     for (const key of ['abilities', 'gear', 'relationships', 'illuminationKeys']) character[key] ||= [];
   }
-  return migrateProgression(state);
+  return migrateArticles(migrateProgression(state));
 }
 
 export async function createStore(onStatus, onPresenceStatus = () => {}) {

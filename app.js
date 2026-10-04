@@ -2,10 +2,11 @@ import { CAMPAIGNS } from './campaign-data.js?v=2';
 import { ACTIONS, DRIVES, clone, cleanText, titleCase, poolFor, resultFor, validSelections, secureD6 } from './core.js?v=2';
 import { addRoll, selectResult, confirmResult, resistRoll, addChat, adjustTrack,
   updateCharacter, updateCircle, toggleGear } from './state.js?v=2';
-import { createStore, friendlyError } from './store.js?v=3';
+import { createStore, friendlyError } from './store.js?v=4';
 import { ABILITY_REFERENCE_URL, abilityChoices } from './ability-catalog.js?v=2';
 import { advancementCycles, pendingCircleAdvance, pendingCharacterAdvance, chooseCircleAbility,
   completeCharacterAdvance, manageCharacterAbilities } from './progression.js?v=2';
+import { ARTICLE_AUTHORS, articleImagePath, listArticles, addArticle, updateArticle, removeArticle } from './articles.js?v=1';
 
 const $ = selector => document.querySelector(selector);
 const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -17,6 +18,8 @@ let unsubscribeCircle, unsubscribePresence, peers = [], busy = false, opening = 
 let presenceReadError = null, presenceWriteError = null;
 let editKind, editBaseline, editCharacterId, toastTimer, latestId = null;
 let editCycleId, editAbilities = [], gildedChoice = null, poolSignature = '';
+let articleFilter = '', editArticleId, readerArticleId = null, readerRecord = '', readerScale = 1;
+let readerFitsWidth = true;
 const inputNames = ['drive-spend', 'bonus-dice', 'extra-gilded'];
 
 function character() { return seat && seat !== 'gm' ? circle?.characters?.[seat] : null; }
@@ -53,7 +56,7 @@ function portraitSource(path) {
   if (!path) return '';
   try {
     const url = new URL(path, location.href);
-    // Keep external and signed URLs intact; GitHub-hosted portraits get a fresh request.
+    // Keep external and signed URLs intact; GitHub-hosted images get a fresh request.
     if (url.origin !== location.origin || !['http:', 'https:'].includes(url.protocol)) return path;
     url.searchParams.set('candela-picture', portraitRevision);
     return url.href;
@@ -62,6 +65,8 @@ function portraitSource(path) {
 function refreshPictures() {
   portraitRevision = id();
   for (const image of document.querySelectorAll('img[data-portrait]')) image.src = portraitSource(image.dataset.portrait);
+  for (const image of document.querySelectorAll('img[data-article-image]')) image.src = portraitSource(image.dataset.articleImage);
+  if ($('#article-reader').open) $('#reader-original').href = $('#reader-image').src;
   toast('Reloading pictures…');
 }
 function portraitMarkup(c, className = 'seat-avatar') {
@@ -192,7 +197,7 @@ function renderTable() {
   $('#character-name').textContent = c?.name || LIGHTKEEPER.name;
   $('#character-subtitle').textContent = c ? `${c.pronouns} · Level ${c.level || 2} · ${circle.name}` : `Lightkeeper · ${circle.name} · Circle overview & freeform dice`;
   $('#edit-character').hidden = !c;
-  for (const tab of ['character', 'dossier', 'circle', 'log']) {
+  for (const tab of ['character', 'dossier', 'circle', 'articles', 'log']) {
     const button = $(`#tab-${tab}`);
     button.hidden = !c && (tab === 'character' || tab === 'dossier');
     button.classList.toggle('active', tab === activeTab);
@@ -205,6 +210,8 @@ function renderTable() {
   renderFeed();
   renderLatest();
   $('.table-columns').classList.toggle('table-log-only', activeTab === 'log');
+  $('.table-columns').classList.toggle('table-articles-only', activeTab === 'articles');
+  syncArticleReader();
 }
 function renderAdvancement() {
   const c = character(), pending = pendingCircleAdvance(circle);
@@ -225,9 +232,120 @@ function advancementHistory() {
 function renderSheet() {
   const c = character();
   $('#sheet-content').hidden = activeTab === 'log';
+  $('#feed-panel').hidden = activeTab === 'articles';
   if (activeTab === 'character' && c) renderCharacterSheet(c);
   else if (activeTab === 'dossier' && c) renderDossier(c);
   else if (activeTab === 'circle') renderCircleSheet();
+  else if (activeTab === 'articles') renderArticles();
+}
+function articleAuthor(article) {
+  return circle.characters[article.authorId]?.name || (article.authorId === 'keith' ? 'Keith' : 'Wysel');
+}
+function articleTitle(article) { return article.title || `Article by ${articleAuthor(article)}`; }
+function renderArticles() {
+  const all = listArticles(circle), articles = listArticles(circle, articleFilter);
+  $('#sheet-content').innerHTML = `<section class="panel articles-panel">
+    <div class="panel-heading"><div><p class="eyebrow">REPORTS FROM NEWFAIRE</p><h2>The press archive</h2><p class="muted">Keith’s and Wysel’s words, kept for the Circle.</p></div><button class="outline-button" data-command="add-article" ${busy ? 'disabled' : ''}>Add article <span aria-hidden="true">↗</span></button></div>
+    <div class="articles-toolbar"><div class="article-filters" role="group" aria-label="Filter articles by author">${[['','All'],['keith','Keith'],['wysel','Wysel']].map(([key,label]) => `<button class="article-filter${articleFilter === key ? ' active' : ''}" data-command="article-filter" data-author="${key}" aria-pressed="${articleFilter === key}">${label}<span>${listArticles(circle,key).length}</span></button>`).join('')}</div><span class="small-note">${all.length} ${all.length === 1 ? 'article' : 'articles'} in the archive</span></div>
+    ${articles.length ? `<div class="article-grid">${articles.map(article => `<article class="article-card">
+      <button class="article-cover" data-command="read-article" data-article="${html(article.id)}" aria-label="Read ${html(articleTitle(article))}"><img src="${html(portraitSource(article.imagePath))}" data-article-image="${html(article.imagePath)}" alt="${html(articleTitle(article))}" loading="lazy"><span class="article-cover-label">Read article <span aria-hidden="true">↗</span></span><span class="article-image-error" hidden>Image unavailable · open to check the path</span></button>
+      <div class="article-card-body"><p class="eyebrow">${html(article.publication || 'FROM THE CIRCLE')}</p><h3>${html(articleTitle(article))}</h3><p class="article-byline">By ${html(articleAuthor(article))}${article.dateLabel ? ` · ${html(article.dateLabel)}` : ''}</p></div>
+      <div class="article-card-actions"><button class="quiet-button" data-command="edit-article" data-article="${html(article.id)}" ${busy ? 'disabled' : ''} aria-label="Edit ${html(articleTitle(article))}">Edit details</button><button class="quiet-button" data-command="remove-article" data-article="${html(article.id)}" ${busy ? 'disabled' : ''} aria-label="Remove ${html(articleTitle(article))}">Remove</button></div></article>`).join('')}</div>` : `<div class="articles-empty"><p class="eyebrow">THE NEXT EDITION AWAITS</p><h3>${articleFilter ? `No articles by ${articleFilter === 'keith' ? 'Keith' : 'Wysel'} yet.` : 'No articles in the archive yet.'}</h3><p class="muted">Add a Canva export to start the collection.</p><button class="outline-button" data-command="add-article" ${busy ? 'disabled' : ''}>Add article ↗</button></div>`}
+    <p class="small-note articles-note">Open a page to zoom in and read its columns. This archive stays saved when the table log is cleared.</p>
+  </section>`;
+  for (const image of document.querySelectorAll('.article-cover img')) {
+    image.addEventListener('load', () => { image.hidden = false; image.parentElement.querySelector('.article-image-error').hidden = true; });
+    image.addEventListener('error', () => { image.hidden = true; image.parentElement.querySelector('.article-image-error').hidden = false; });
+  }
+}
+function openArticleReader(articleId) {
+  if (!circle.articles?.[articleId]) return;
+  readerArticleId = articleId; readerRecord = ''; readerFitsWidth = true;
+  if (!$('#article-reader').open) $('#article-reader').showModal();
+  syncArticleReader();
+}
+function syncArticleReader() {
+  if (!readerArticleId || !$('#article-reader').open) return;
+  const article = circle.articles?.[readerArticleId];
+  if (!article) { $('#article-reader').close(); toast('This article was removed from the archive.'); return; }
+  const record = JSON.stringify([article, articleAuthor(article)]);
+  if (record === readerRecord) return;
+  readerRecord = record;
+  $('#reader-title').textContent = articleTitle(article);
+  $('#reader-byline').textContent = [`By ${articleAuthor(article)}`, article.publication, article.dateLabel].filter(Boolean).join(' · ');
+  const image = $('#reader-image');
+  image.alt = articleTitle(article);
+  const changedImage = image.dataset.articleImage !== article.imagePath;
+  image.dataset.articleImage = article.imagePath;
+  $('#reader-original').href = portraitSource(article.imagePath);
+  if (changedImage || !image.getAttribute('src')) {
+    readerFitsWidth = true;
+    image.hidden = true; image.style.width = '';
+    $('#reader-status').hidden = false; $('#reader-status').textContent = 'Loading article…';
+    setReaderControls(false);
+    image.src = portraitSource(article.imagePath);
+  } else if (image.complete && image.naturalWidth) readerImageLoaded();
+}
+function setReaderControls(enabled) {
+  for (const button of document.querySelectorAll('.reader-toolbar button')) button.disabled = !enabled;
+  if (!enabled) $('#reader-zoom').textContent = '—';
+}
+function readerImageLoaded() {
+  const image = $('#reader-image');
+  if (!image.naturalWidth || !$('#article-reader').open) return;
+  image.hidden = false; $('#reader-status').hidden = true; setReaderControls(true);
+  if (readerFitsWidth) fitArticleWidth();
+  else setArticleScale(readerScale);
+}
+function setArticleScale(scale) {
+  const image = $('#reader-image'); if (!image.naturalWidth) return;
+  readerScale = Math.max(0.01, Math.min(4, scale));
+  image.style.width = `${Math.round(image.naturalWidth * readerScale)}px`;
+  $('#reader-zoom').textContent = `${Math.round(readerScale * 100)}%`;
+  document.querySelector('[data-command="article-zoom"][data-factor="0.8"]').disabled = readerScale <= 0.01;
+  document.querySelector('[data-command="article-zoom"][data-factor="1.25"]').disabled = readerScale >= 4;
+}
+function fitArticleWidth() {
+  const image = $('#reader-image'); if (!image.naturalWidth) return;
+  readerFitsWidth = true;
+  setArticleScale(($('#reader-viewport').clientWidth - 32) / image.naturalWidth);
+  $('#reader-viewport').scrollTo(0, 0);
+}
+async function checkArticleImage(path) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const timer = setTimeout(() => finish(new Error('The image took too long to load. Check its path and try again.')), 10000);
+    function finish(error) {
+      clearTimeout(timer); image.onload = image.onerror = null;
+      if (error) reject(error); else resolve();
+    }
+    image.onload = () => image.decode().then(() => finish(), () => finish(new Error('This image could not be decoded. Use a PNG, JPG, or WebP export.')));
+    image.onerror = () => finish(new Error('The image could not be loaded. Upload it to GitHub, wait for deployment, and check the exact filename and capital letters.'));
+    image.src = portraitSource(path);
+  });
+}
+function openArticleEditor(articleId = null) {
+  const article = articleId ? circle.articles?.[articleId] : null;
+  if (articleId && !article) return;
+  editArticleId = articleId || id(); editBaseline = article ? clone(article) : null;
+  prepareAdvancementEditor('article', article ? 'Edit article details' : 'Add an article');
+  $('#save-edit').textContent = article ? 'Save article' : 'Add article';
+  const authorId = article?.authorId || (ARTICLE_AUTHORS.includes(seat) ? seat : 'wysel');
+  $('#edit-fields').innerHTML = `<p class="muted">Export your Canva article as PNG or JPG and upload it to <strong>assets/articles</strong> in GitHub. After the site deploys, enter its image path here.</p><div class="form-grid article-form">
+    <label class="form-field">Author<select name="authorId" required>${ARTICLE_AUTHORS.map(key => `<option value="${key}" ${key === authorId ? 'selected' : ''}>${html(circle.characters[key]?.name || key)}</option>`).join('')}</select></label>
+    ${field('Title (optional)','title',article?.title || '', 'text','maxlength="160"')}
+    <label class="form-field full">Image path or HTTPS URL<input name="imagePath" value="${html(article?.imagePath || '')}" placeholder="./assets/articles/new-article.png" maxlength="2000" required></label>
+    ${field('Publication (optional)','publication',article?.publication || '', 'text','maxlength="100"')}${field('Date or issue (optional)','dateLabel',article?.dateLabel || '', 'text','maxlength="60"')}
+    </div><p class="small-note">The image keeps your Canva layout. Everyone in the Circle can read and manage this archive.</p>`;
+  $('#edit-dialog').showModal();
+}
+function openRemoveArticle(articleId) {
+  const article = circle.articles?.[articleId]; if (!article) return;
+  editArticleId = articleId; editBaseline = clone(article);
+  prepareAdvancementEditor('article-delete', 'Remove this article?');
+  $('#save-edit').textContent = 'Remove article';
+  $('#edit-fields').innerHTML = `<p class="muted">Remove <strong>${html(articleTitle(article))}</strong> from the shared archive for everyone?</p><p class="small-note">The image file stays in GitHub. You can add it again using the same path.</p>`;
+  $('#edit-dialog').showModal();
 }
 function renderCharacterSheet(c) {
   $('#sheet-content').innerHTML = `<section class="panel character-panel"><div class="section-heading"><h2>Drives & resistance</h2><span class="muted">Available / maximum</span></div>
@@ -479,7 +597,7 @@ function openClearLog() {
   $('#save-edit').disabled = false;
   $('#edit-title').textContent = 'Clear the table log';
   $('#save-edit').textContent = 'Clear log'; $('#edit-error').textContent = '';
-  $('#edit-fields').innerHTML = '<p class="muted">This removes all rolls and conversation from this Circle for everyone. Character sheets, drives, resistance and Circle resources keep their current values.</p><p class="small-note">Export a backup first if you want to keep the log.</p>';
+  $('#edit-fields').innerHTML = '<p class="muted">This removes all rolls and conversation from this Circle for everyone. Character sheets, drives, resistance, Circle resources, and the article archive keep their current values.</p><p class="small-note">Export a backup first if you want to keep the log.</p>';
   $('#edit-dialog').showModal();
 }
 async function saveEditor(event) {
@@ -523,10 +641,21 @@ async function saveEditor(event) {
       patch.resources = Object.fromEntries(['stitch','refresh','train'].map(key => [key,{ current:num(`resource-${key}`), max:num(`resource-max-${key}`) }]));
       patch.abilities = editBaseline.abilities.map(a => ({ ...a, selected:data.has(`ability-${a.id}`) }));
       await mutate(state => updateCircle(state, patch, editBaseline.revision || 0));
+    } else if (editKind === 'article') {
+      const input = { id: editArticleId, authorId: value('authorId'), title: value('title'),
+        publication: value('publication'), dateLabel: value('dateLabel'), imagePath: articleImagePath(value('imagePath')) };
+      await checkArticleImage(input.imagePath);
+      const savedAt = Date.now();
+      await mutate(state => editBaseline
+        ? updateArticle(state, editArticleId, input, editBaseline.version || 0, savedAt)
+        : addArticle(state, input, savedAt));
+      articleFilter = '';
+    } else if (editKind === 'article-delete') {
+      await mutate(state => removeArticle(state, editArticleId, editBaseline.version || 0));
     } else if (editKind === 'clear') {
       await mutate(state => { state.events = {}; }); latestId = null;
     }
-    $('#edit-dialog').close(); toast(editKind === 'clear' ? 'Table log cleared.' : editKind === 'circle-advance' ? 'Circle ability chosen. Character upgrades are ready.' : editKind === 'character-advance' ? 'Advancement saved.' : 'Changes saved.');
+    $('#edit-dialog').close(); toast(editKind === 'article' ? 'Article saved to the archive.' : editKind === 'article-delete' ? 'Article removed.' : editKind === 'clear' ? 'Table log cleared.' : editKind === 'circle-advance' ? 'Circle ability chosen. Character upgrades are ready.' : editKind === 'character-advance' ? 'Advancement saved.' : 'Changes saved.');
     if (seat) {
       try { await store.setPresence(circle.id, character()?.name || LIGHTKEEPER.name, seat); }
       catch (error) { presenceStatus(error); }
@@ -552,6 +681,18 @@ document.addEventListener('click', async event => {
     if (d.command === 'roster') return await showRoster();
     if (d.command === 'seat') return await selectSeat(d.character);
     if (d.command === 'tab') { activeTab = d.tab; renderTable(); return; }
+    if (d.command === 'article-filter') { articleFilter = d.author; renderArticles(); return; }
+    if (d.command === 'read-article') return openArticleReader(d.article);
+    if (d.command === 'add-article') { if (!busy) openArticleEditor(); return; }
+    if (d.command === 'edit-article') { if (!busy) openArticleEditor(d.article); return; }
+    if (d.command === 'remove-article') { if (!busy) openRemoveArticle(d.article); return; }
+    if (d.command === 'close-article') { $('#article-reader').close(); return; }
+    if (d.command === 'article-fit') return fitArticleWidth();
+    if (d.command === 'article-zoom' || d.command === 'article-original-size') {
+      readerFitsWidth = false;
+      setArticleScale(d.command === 'article-original-size' ? 1 : readerScale * Number(d.factor));
+      return;
+    }
     if (d.command === 'action') {
       action = d.action;
       $('#drive-spend').value = '0'; $('#extra-gilded').value = '0';
@@ -595,6 +736,16 @@ $('#edit-form').addEventListener('change', event=> {
   if (event.target.dataset.upgrade) syncUpgradeChoices();
 });
 $('#edit-dialog').addEventListener('cancel',event => { if (busy) event.preventDefault(); });
+$('#reader-image').addEventListener('load', readerImageLoaded);
+$('#reader-image').addEventListener('error', () => {
+  $('#reader-image').hidden = true; setReaderControls(false);
+  $('#reader-status').hidden = false;
+  $('#reader-status').textContent = `Image unavailable: ${$('#reader-image').dataset.articleImage}. Check the GitHub filename and deployment, then use Refresh pictures or edit the article’s path.`;
+});
+$('#article-reader').addEventListener('close', () => { readerArticleId = null; readerRecord = ''; });
+new ResizeObserver(() => {
+  if ($('#article-reader').open && readerFitsWidth && !$('#reader-image').hidden) fitArticleWidth();
+}).observe($('#reader-viewport'));
 $('#help-button').addEventListener('click',() => $('#help-dialog').showModal());
 $('#chat-form').addEventListener('submit',async event => {
   event.preventDefault(); const message = cleanText($('#chat-input').value,500); if (!message) return;

@@ -2,7 +2,7 @@
 
 1. Unzip `Candela-Obscura-update.zip`.
 2. In your existing `Reefuu/Candela-Obscura` GitHub repository, use **Add file → Upload files**.
-3. Upload all the extracted files to the repository's top level, preserving the `tests` and `assets` folders. Commit the replacements. The new portrait belongs at `assets/sol.png`.
+3. Upload all the extracted files to the repository's top level, preserving the `tests` and `assets` folders. Commit the replacements. Sol's portrait belongs at `assets/sol.png` and Wysel's article belongs at `assets/articles/wyselBlazing.png`.
 4. Wait for the GitHub Pages deployment, then reload your site. On a Mac, use **Cmd + Shift + R** to load the updated files.
 
 The update ZIP contains the changed app files and does not contain `firebase-config.js`. Your configured Firebase project and saved Circle carry over. Keep using the corrected `firebase-rules.json` from the previous access fix; these features use the same database permissions.
@@ -12,6 +12,21 @@ The update ZIP contains the changed app files and does not contain `firebase-con
 Version 1.1.1 fixes the misleading access warning when rolls and sheets work but the online player connection fails. It supports the earlier presence rules by creating the player's owned entry before retrying disconnect cleanup when required. The current rules still register cleanup first.
 
 Online player connection problems are shown in the player-list area. Real Circle access and save errors remain visible. Upload `index.html`, `app.js`, and `store.js` together so the page loads this fix instead of cached scripts. You do not need to reset your database or replace your Firebase config.
+
+## Articles from Canva
+
+Version 1.2 adds a shared **Articles** tab for every investigator and Sol. Wysel's supplied **The Blazing Family Home** page from **The Queen's Gambit News** is included in its original image quality. Use **All / Keith / Wysel** filters and open any page for zoom controls, **Fit width**, **100%**, and **Open original**. On a phone, swipe or scroll the enlarged image to read its columns.
+
+To add another article:
+
+1. Export it from Canva as PNG or JPG, using a readable resolution.
+2. Upload the image to the GitHub repository's `assets/articles` folder and commit it. Wait for GitHub Pages to finish deploying.
+3. Open **Articles → Add article**, choose Keith or Wysel, and enter its exact path, such as `./assets/articles/keith-issue-2.png`.
+4. Optionally add a title, publication, and date or issue. Click **Add article**. The app checks that the image loads before saving it.
+
+Article details are saved in your existing Circle's Firebase data; image files stay in GitHub. Clearing the table log keeps the article archive. **Edit details** changes a saved entry, and **Remove** removes it from the shared archive while leaving its image in GitHub. Removing the supplied example stays removed after reload. Everyone at your trusted table can manage this archive.
+
+No Firebase config or rules change is needed for this feature. Existing characters, custom portraits, resources, and log entries carry over. Upload `articles.js` and the new image together with the other update files. **Refresh pictures ↻** also refreshes GitHub-hosted article images. **Export backup** includes article details and image paths; keep the image files separately in your repository.
 
 ## Refresh pictures
 
