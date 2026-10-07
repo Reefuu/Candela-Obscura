@@ -1,4 +1,4 @@
-import { ACTIONS, DRIVES, cleanText, clone, integer, poolFor, defaultSelection, resultFor,
+import { ACTIONS, DRIVES, cleanText, clone, integer, titleCase, poolFor, defaultSelection, resultFor,
   validSelections, validateCharacter, validateCircle } from './core.js?v=2';
 import { migrateProgression, resolveIllumination } from './progression.js?v=2';
 
@@ -160,6 +160,58 @@ export function toggleGear(state, characterId, gearId) {
   const item = character?.gear?.find(g => g.id === gearId);
   if (!item) throw new Error('That gear no longer exists.');
   item.selected = !item.selected;
+  character.version = (character.version || 0) + 1;
+}
+
+export function resetCharacterTracks(state, characterId, field) {
+  const character = state.characters[characterId];
+  if (!character) throw new Error('Choose a character.');
+  if (!['current', 'resistance'].includes(field)) throw new Error('Choose drives or resistance to reset.');
+  const targets = DRIVES.map(key => {
+    const max = integer(character.drives?.[key]?.max, 0, 12, `${titleCase(key)} drive maximum`);
+    return [key, field === 'resistance' ? Math.floor(max / 3) : max];
+  });
+  if (targets.every(([key, value]) => character.drives[key][field] === value)) return;
+  for (const [key, value] of targets) character.drives[key][field] = value;
+  character.version = (character.version || 0) + 1;
+}
+
+function customGearDetails(input) {
+  const name = cleanText(input.name, 80);
+  if (!name) throw new Error('Enter a name for your gear.');
+  return { name, description: cleanText(input.description, 1000) };
+}
+
+export function addCustomGear(state, characterId, input) {
+  const character = state.characters[characterId];
+  if (!character) throw new Error('Choose a character.');
+  if (!/^custom-[a-zA-Z0-9_-]{1,100}$/.test(input.id || '')) throw new Error('This gear needs a valid ID.');
+  if (character.gear?.some(item => item.id === input.id)) return;
+  const item = { ...customGearDetails(input), id: input.id, custom: true, selected: true, version: 0 };
+  character.gear ||= [];
+  character.gear.push(item);
+  character.version = (character.version || 0) + 1;
+}
+
+export function updateCustomGear(state, characterId, gearId, input, expectedVersion) {
+  const character = state.characters[characterId];
+  const item = character?.gear?.find(gear => gear.id === gearId);
+  if (!item) throw new Error('This gear was removed. Close the editor and add it again if needed.');
+  if (!item.custom) throw new Error('Only custom gear can be edited here.');
+  if ((item.version || 0) !== expectedVersion) throw new Error('This gear changed. Close and reopen the editor to use the latest details.');
+  // Keep the latest carried/unmarked state when another player toggles the item.
+  Object.assign(item, customGearDetails(input), { version: (item.version || 0) + 1 });
+  character.version = (character.version || 0) + 1;
+}
+
+export function removeCustomGear(state, characterId, gearId, expectedVersion) {
+  const character = state.characters[characterId];
+  if (!character) throw new Error('Choose a character.');
+  const item = character.gear?.find(gear => gear.id === gearId);
+  if (!item) return;
+  if (!item.custom) throw new Error('Only custom gear can be removed.');
+  if ((item.version || 0) !== expectedVersion) throw new Error('This gear changed. Check the latest details before removing it.');
+  character.gear = character.gear.filter(gear => gear.id !== gearId);
   character.version = (character.version || 0) + 1;
 }
 

@@ -29,6 +29,8 @@ Version 1.1.3 adds **Sol**, your Lightkeeper, with the supplied portrait on the 
 
 Version 1.2 adds the **Articles** tab with Wysel’s supplied newspaper image, **All / Keith / Wysel** filters, a full-size reader, and add/edit/remove controls. Upload new Canva PNG or JPG exports to `assets/articles`, then enter their paths in **Add article**. Optional titles, publication names, and dates stay in Firebase with the Circle. The archive survives clearing the table log and includes safeguards against simultaneous edits.
 
+Version 1.2.1 adds **Reset drives** and **Reset resistance** on each investigator’s Actions & drives page. Each button refills its own three tracks to their current maximum. **Add custom gear** accepts any item name and optional notes; custom items can be marked as carried, edited, or removed and are saved with the investigator. The patch is based on the latest uploaded project and keeps its existing config, portraits, and article files.
+
 ## Files
 
 | File | Purpose |
@@ -58,7 +60,7 @@ To run the game/state tests with Node.js 22 or newer:
 npm test
 ```
 
-Validation completed: 42 game, progression, presence, and archive tests. Desktop and 390px phone browser checks cover original-quality article images, author filters, add/edit/remove controls, bad-path rejection, full-size zoom and panning, picture refresh, shared updates, stale editors, backups, and reload persistence. Firebase emulator checks use the production store and published rules to verify archive migration, simultaneous additions and conversation, clearing the log, reconnecting, and permanently removing every article. Existing sheet and advancement checks also remain covered. Live Firebase play still needs your project’s config and the two-browser check in START_HERE.md.
+Validation completed: 52 game, progression, presence, archive, drive/resistance reset, and custom gear tests. Desktop and 390px phone browser checks cover original-quality article images, author filters, add/edit/remove controls, bad-path rejection, full-size zoom and panning, picture refresh, shared updates, stale editors, backups, and reload persistence. Firebase emulator checks use the production store and published rules to verify archive migration, simultaneous additions and conversation, clearing the log, reconnecting, and permanently removing every article. Desktop and 390px phone checks also cover separate drive/resistance refills, custom gear names and multiline notes, marking items, shared editing, removal, backups, and use after spending tracks. Real Firebase transactions verify simultaneous resets and gear additions, stale custom gear edits, reloads, and preservation of other live data. Mobile counts are also checked at the maximum 12 drive points. Existing sheet and advancement checks remain covered. Live Firebase play still needs your project’s config and the two-browser check in START_HERE.md.
 
 The app uses native browser modules, the Firebase Web SDK, and browser `crypto.getRandomValues()` for dice. Rolls are generated on each player's device and are suitable for a friendly tabletop group. Authentication and database rules protect database access; they do not provide server-authoritative dice or private membership gates. Hosting this repository publicly makes its initial character sheets and artwork publicly accessible.
 

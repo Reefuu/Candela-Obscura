@@ -1,5 +1,14 @@
 # Update your existing Candela-Obscura app
 
+## Latest update: drives, resistance, and custom gear (1.2.1)
+
+This update is based on your latest uploaded project, including Jack’s portrait and Keith’s article files. Unzip `Candela-Obscura-reset-gear-update.zip` and upload its contents to the GitHub repository’s top level, keeping the `tests` folder intact. Commit, wait for GitHub Pages to deploy, then reload the site. The patch contains the changed app files only; your current Firebase config, database rules, portraits, and article files carry over.
+
+On **Actions & drives**, use **Reset drives** to refill all three of the selected investigator’s drives to their current maximum. Use **Reset resistance** to refill the three resistance tracks to their maximum (drive maximum divided by three, rounded down). Each reset affects its own tracks and saves for everyone at the table. Buttons are disabled when those tracks are already full. Use them when your table decides the investigator should recover; they do not spend Circle downtime resources automatically.
+
+Under **Gear**, click **Add custom gear**, type an item name and optional notes, then click **Add gear**. It is saved to this investigator’s sheet and marked as carried. Click its checkbox to mark or unmark it, **Edit** to change its name or notes, and **Remove** to remove a custom item. The preset gear list stays available. Custom gear is included in Circle backups and survives reloads and clearing the table log.
+
+
 1. Unzip `Candela-Obscura-update.zip`.
 2. In your existing `Reefuu/Candela-Obscura` GitHub repository, use **Add file → Upload files**.
 3. Upload all the extracted files to the repository's top level, preserving the `tests` and `assets` folders. Commit the replacements. Sol's portrait belongs at `assets/sol.png` and Wysel's article belongs at `assets/articles/wyselBlazing.png`.

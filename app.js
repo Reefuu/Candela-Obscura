@@ -1,7 +1,8 @@
 import { CAMPAIGNS } from './campaign-data.js?v=2';
 import { ACTIONS, DRIVES, clone, cleanText, titleCase, poolFor, resultFor, validSelections, secureD6 } from './core.js?v=2';
 import { addRoll, selectResult, confirmResult, resistRoll, addChat, adjustTrack,
-  updateCharacter, updateCircle, toggleGear } from './state.js?v=2';
+  updateCharacter, updateCircle, toggleGear, resetCharacterTracks,
+  addCustomGear, updateCustomGear, removeCustomGear } from './state.js?v=3';
 import { createStore, friendlyError } from './store.js?v=4';
 import { ABILITY_REFERENCE_URL, abilityChoices } from './ability-catalog.js?v=2';
 import { advancementCycles, pendingCircleAdvance, pendingCharacterAdvance, chooseCircleAbility,
@@ -20,6 +21,7 @@ let editKind, editBaseline, editCharacterId, toastTimer, latestId = null;
 let editCycleId, editAbilities = [], gildedChoice = null, poolSignature = '';
 let articleFilter = '', editArticleId, readerArticleId = null, readerRecord = '', readerScale = 1;
 let readerFitsWidth = true;
+let editGearId;
 const inputNames = ['drive-spend', 'bonus-dice', 'extra-gilded'];
 
 function character() { return seat && seat !== 'gm' ? circle?.characters?.[seat] : null; }
@@ -349,6 +351,7 @@ function openRemoveArticle(articleId) {
 }
 function renderCharacterSheet(c) {
   $('#sheet-content').innerHTML = `<section class="panel character-panel"><div class="section-heading"><h2>Drives & resistance</h2><span class="muted">Available / maximum</span></div>
+    <div class="track-reset-buttons"><button class="outline-button" type="button" data-command="reset-drives" data-character="${html(c.id)}" title="Refill all three drives for ${html(c.name)} to their maximum" ${busy || DRIVES.every(key => c.drives[key].current === c.drives[key].max) ? 'disabled' : ''}>Reset drives <span aria-hidden="true">↻</span></button><button class="outline-button" type="button" data-command="reset-resistance" data-character="${html(c.id)}" title="Refill all three resistance tracks for ${html(c.name)} to their maximum" ${busy || DRIVES.every(key => c.drives[key].resistance === Math.floor(c.drives[key].max / 3)) ? 'disabled' : ''}>Reset resistance <span aria-hidden="true">↻</span></button></div>
     <div class="drive-grid">${DRIVES.map(d => {
       const drive = c.drives[d];
       return `<section class="drive-card ${d}"><h3 class="eyebrow">${titleCase(d)}</h3><div class="drive-value"><strong>${drive.current}</strong><span>/ ${drive.max}</span></div><div class="track-pips" aria-hidden="true">${dots(drive.current, drive.max)}</div>${stepper({ value:drive.current, max:drive.max, group:'drives', key:d, characterId:c.id, label:`${titleCase(d)} drive` })}<div class="resistance-track"><p class="eyebrow" style="margin-bottom:8px">Resistance</p>${stepper({ value:drive.resistance, max:Math.floor(drive.max / 3), group:'drives', key:d, characterId:c.id, field:'resistance', label:`${titleCase(d)} resistance` })}</div></section>`;
@@ -359,7 +362,10 @@ function renderCharacterSheet(c) {
 }
 function abilitySection(c, includeGear = false) {
   const selected = c.abilities.filter(a => a.selected);
-  return `<section class="panel" style="margin-top:20px"><div class="panel-heading"><div><p class="eyebrow">WHAT YOU BRING TO THE TABLE</p><h2>Abilities${includeGear ? ' & gear' : ''}</h2></div><button class="outline-button" data-command="manage-abilities">Choose abilities ↗</button></div>${selected.length ? selected.map(a => `<article class="ability-card selected"><h3>${html(a.name)}</h3>${a.role ? `<span class="ability-origin">${html(a.specialty ? `${a.role} / ${a.specialty}` : `${a.role} role`)}</span>` : ''}<p>${html(a.description)}</p>${a.referencePage ? `<a class="ability-reference" href="${ABILITY_REFERENCE_URL}#page=${Number(a.referencePage) || 1}" target="_blank" rel="noopener">Read ability details ↗</a>` : ''}</article>`).join('') : '<p class="muted">No abilities selected yet.</p>'}${includeGear ? `<div class="dossier-section"><h3>Gear</h3><div class="gear-list">${c.gear.map(g => `<button data-command="gear" data-gear="${html(g.id)}" data-character="${c.id}" aria-label="${g.selected ? 'Unmark' : 'Mark'} ${html(g.name)}" aria-pressed="${g.selected}"><span class="gear-box${g.selected ? ' selected' : ''}" aria-hidden="true">${g.selected ? '✓' : ''}</span>${html(g.name)}</button>`).join('')}</div><p class="small-note">Choose gear as you use it. Check your abilities for additional slots.</p></div>` : ''}</section>`;
+  return `<section class="panel" style="margin-top:20px"><div class="panel-heading"><div><p class="eyebrow">WHAT YOU BRING TO THE TABLE</p><h2>Abilities${includeGear ? ' & gear' : ''}</h2></div><button class="outline-button" data-command="manage-abilities">Choose abilities ↗</button></div>${selected.length ? selected.map(a => `<article class="ability-card selected"><h3>${html(a.name)}</h3>${a.role ? `<span class="ability-origin">${html(a.specialty ? `${a.role} / ${a.specialty}` : `${a.role} role`)}</span>` : ''}<p>${html(a.description)}</p>${a.referencePage ? `<a class="ability-reference" href="${ABILITY_REFERENCE_URL}#page=${Number(a.referencePage) || 1}" target="_blank" rel="noopener">Read ability details ↗</a>` : ''}</article>`).join('') : '<p class="muted">No abilities selected yet.</p>'}${includeGear ? gearSection(c) : ''}</section>`;
+}
+function gearSection(c) {
+  return `<section class="dossier-section gear-section"><div class="gear-heading"><h3>Gear</h3><button class="outline-button" type="button" data-command="add-custom-gear" ${busy ? 'disabled' : ''}>Add custom gear <span aria-hidden="true">+</span></button></div><div class="gear-list">${c.gear.map(item => `<div class="gear-item" data-gear-item="${html(item.id)}"><button class="gear-toggle" type="button" data-command="gear" data-gear="${html(item.id)}" data-character="${html(c.id)}" aria-label="${item.selected ? 'Unmark' : 'Mark'} ${html(item.name)}" aria-pressed="${Boolean(item.selected)}" ${busy ? 'disabled' : ''}><span class="gear-box${item.selected ? ' selected' : ''}" aria-hidden="true">${item.selected ? '✓' : ''}</span><span>${html(item.name)}</span></button>${item.description ? `<p class="gear-note">${html(item.description)}</p>` : ''}${item.custom ? `<div class="gear-item-actions"><span class="gear-custom-label">Custom item</span><button class="quiet-button" type="button" data-command="edit-custom-gear" data-gear="${html(item.id)}" aria-label="Edit ${html(item.name)}" ${busy ? 'disabled' : ''}>Edit</button><button class="quiet-button" type="button" data-command="remove-custom-gear" data-character="${html(c.id)}" data-gear="${html(item.id)}" data-version="${item.version || 0}" aria-label="Remove ${html(item.name)}" ${busy ? 'disabled' : ''}>Remove</button></div>` : ''}</div>`).join('')}</div><p class="small-note">Mark items as you bring them. Add a name and optional notes for anything else; check your abilities for additional gear slots.</p></section>`;
 }
 function renderDossier(c) {
   $('#sheet-content').innerHTML = `<section class="panel"><h2 class="dossier-title">The investigator’s dossier</h2>${[['Style',c.style],['Catalyst',c.catalyst],['Question',c.question],['Scars',c.scars],['Notes',c.notes]].map(([label,value]) => `<section class="dossier-section"><h3>${label}</h3><p>${html(value || 'Nothing recorded yet.')}</p></section>`).join('')}<section class="dossier-section"><h3>Relationships</h3>${c.relationships.length ? c.relationships.map(r => `<p class="relationship">${html(r.name)}<span>${html(r.relation)}</span></p>`).join('') : '<p>No relationships recorded.</p>'}</section><section class="dossier-section"><h3>Illumination keys</h3>${c.illuminationKeys.map(k => `<p>${html(k)}</p>`).join('')}</section></section>${abilitySection(c)}`;
@@ -528,6 +534,17 @@ function prepareAdvancementEditor(kind, title) {
   $('#edit-error').textContent = '';
   $('#save-edit').disabled = false;
 }
+function openCustomGearEditor(gearId = null) {
+  const c = character(); if (!c) return;
+  const item = gearId ? c.gear.find(gear => gear.id === gearId) : null;
+  if (gearId && !item?.custom) return;
+  editCharacterId = c.id; editGearId = gearId || `custom-${id()}`;
+  editBaseline = item ? clone(item) : null;
+  prepareAdvancementEditor('custom-gear', item ? 'Edit custom gear' : 'Add custom gear');
+  $('#save-edit').textContent = item ? 'Save gear' : 'Add gear';
+  $('#edit-fields').innerHTML = `<p class="muted">${item ? 'Update this item’s name or notes.' : 'Bring something beyond the usual list. New items are marked as carried.'}</p><div class="form-grid custom-gear-form">${field('Item name','gear-name',item?.name || '', 'text','maxlength="80" required autofocus placeholder="e.g. Collins family signet ring"')}<label class="form-field full">Notes (optional)<textarea name="gear-description" maxlength="1000" placeholder="Describe the item or what it is for…">${html(item?.description || '')}</textarea></label></div>`;
+  $('#edit-dialog').showModal();
+}
 function openAbilityManager() {
   const c = character(); if (!c) return;
   editBaseline = clone(c); editCharacterId = c.id; editAbilities = abilityChoices(c);
@@ -652,10 +669,15 @@ async function saveEditor(event) {
       articleFilter = '';
     } else if (editKind === 'article-delete') {
       await mutate(state => removeArticle(state, editArticleId, editBaseline.version || 0));
+    } else if (editKind === 'custom-gear') {
+      const input = { id: editGearId, name: value('gear-name'), description: value('gear-description') };
+      await mutate(state => editBaseline
+        ? updateCustomGear(state, editCharacterId, editGearId, input, editBaseline.version || 0)
+        : addCustomGear(state, editCharacterId, input));
     } else if (editKind === 'clear') {
       await mutate(state => { state.events = {}; }); latestId = null;
     }
-    $('#edit-dialog').close(); toast(editKind === 'article' ? 'Article saved to the archive.' : editKind === 'article-delete' ? 'Article removed.' : editKind === 'clear' ? 'Table log cleared.' : editKind === 'circle-advance' ? 'Circle ability chosen. Character upgrades are ready.' : editKind === 'character-advance' ? 'Advancement saved.' : 'Changes saved.');
+    $('#edit-dialog').close(); toast(editKind === 'custom-gear' ? 'Custom gear saved.' : editKind === 'article' ? 'Article saved to the archive.' : editKind === 'article-delete' ? 'Article removed.' : editKind === 'clear' ? 'Table log cleared.' : editKind === 'circle-advance' ? 'Circle ability chosen. Character upgrades are ready.' : editKind === 'character-advance' ? 'Advancement saved.' : 'Changes saved.');
     if (seat) {
       try { await store.setPresence(circle.id, character()?.name || LIGHTKEEPER.name, seat); }
       catch (error) { presenceStatus(error); }
@@ -701,6 +723,8 @@ document.addEventListener('click', async event => {
       return;
     }
     if (d.command === 'edit-character') return openCharacterEditor();
+    if (d.command === 'add-custom-gear') { if (!busy) openCustomGearEditor(); return; }
+    if (d.command === 'edit-custom-gear') { if (!busy) openCustomGearEditor(d.gear); return; }
     if (d.command === 'manage-abilities') return openAbilityManager();
     if (d.command === 'circle-advance') return openCircleAdvancement(d.cycle);
     if (d.command === 'character-advance') return openCharacterAdvancement(d.cycle);
@@ -717,6 +741,14 @@ document.addEventListener('click', async event => {
       return;
     }
     if (d.command === 'adjust') return await run(() => mutate(state => adjustTrack(state,{ characterId:d.character, group:d.group, key:d.key, field:d.field, delta:Number(d.delta) })));
+    if (d.command === 'reset-drives' || d.command === 'reset-resistance') return await run(async () => {
+      await mutate(state => resetCharacterTracks(state, d.character, d.command === 'reset-drives' ? 'current' : 'resistance'));
+      toast(d.command === 'reset-drives' ? 'Drives refilled to their maximum.' : 'Resistance refilled to its maximum.');
+    });
+    if (d.command === 'remove-custom-gear') return await run(async () => {
+      await mutate(state => removeCustomGear(state, d.character, d.gear, Number(d.version)));
+      toast('Custom gear removed.');
+    });
     if (d.command === 'gear') return await run(() => mutate(state => toggleGear(state,d.character,d.gear)));
     if (d.command === 'select-result') return await run(() => mutate(state => selectResult(state,d.roll,store.uid,Number(d.index))));
     if (d.command === 'confirm-result') return await run(() => mutate(state => confirmResult(state,d.roll,store.uid)));
